@@ -1,5 +1,7 @@
 import csv
 import os
+import re
+import requests
 
 ###############################################################################
 # Najprej definirajmo nekaj pomožnih orodij za pridobivanje podatkov s spleta.
@@ -8,11 +10,11 @@ import os
 # definirajte URL glavne strani bolhe za oglase z mačkami
 cats_frontpage_url = 'http://www.bolha.com/zivali/male-zivali/macke/'
 # mapa, v katero bomo shranili podatke
-cat_directory = 'TODO'
+cat_directory = r'C:\Users\zupan\OneDrive\Documents\Matematika\Matematika-2\Programiranje_1\programiranje-1\02-zajem-podatkov\vaje\macke_podatki'
 # ime datoteke v katero bomo shranili glavno stran
-frontpage_filename = 'TODO'
+frontpage_filename = 'index.html'
 # ime CSV datoteke v katero bomo shranili podatke
-csv_filename = 'TODO'
+csv_filename = 'macke_podatki.csv'
 
 
 def download_url_to_string(url):
@@ -21,13 +23,14 @@ def download_url_to_string(url):
     """
     try:
         # del kode, ki morda sproži napako
-        page_content = 'TODO'
-    except 'TODO':
+        page_content = requests.get(url)
+    except Exception as e:
         # koda, ki se izvede pri napaki
         # dovolj je če izpišemo opozorilo in prekinemo izvajanje funkcije
-        raise NotImplementedError()
+        print(f'Napaka pri prenosu: {url} ::', e)
+        return None
     # nadaljujemo s kodo če ni prišlo do napake
-    raise NotImplementedError()
+    return page_content.text
 
 
 def save_string_to_file(text, directory, filename):
@@ -45,10 +48,11 @@ def save_string_to_file(text, directory, filename):
 # Definirajte funkcijo, ki prenese glavno stran in jo shrani v datoteko.
 
 
-def save_frontpage(page, directory, filename):
+def save_frontpage(directory, filename):
     """Funkcija shrani vsebino spletne strani na naslovu "page" v datoteko
     "directory"/"filename"."""
-    raise NotImplementedError()
+    text = download_url_to_string(cats_frontpage_url)
+    save_string_to_file(text, directory, filename)
 
 
 ###############################################################################
@@ -58,7 +62,11 @@ def save_frontpage(page, directory, filename):
 
 def read_file_to_string(directory, filename):
     """Funkcija vrne celotno vsebino datoteke "directory"/"filename" kot niz."""
-    raise NotImplementedError()
+    path = os.path.join(directory, filename)
+    # os.path.join na primeren način (glede na operacijski sistem) združi pot do mape 
+    # in ime datoteke (pri windowsih z "\", kje drugje pa drugače)
+    with open(path, 'r', encoding='utf-8') as file_in:
+        return file_in.read()
 
 
 # Definirajte funkcijo, ki sprejme niz, ki predstavlja vsebino spletne strani,
@@ -70,7 +78,14 @@ def read_file_to_string(directory, filename):
 def page_to_ads(page_content):
     """Funkcija poišče posamezne oglase, ki se nahajajo v spletni strani in
     vrne seznam oglasov."""
-    raise NotImplementedError()
+    vzorec_bloka = re.compile(
+        r"<li class=\"EntityList-item EntityList-item--(.*?)</li>",
+        flags=re.DOTALL
+    )
+    # compile najprej vzorec prevede v računalniku bolj berljivo obliko in je potem iskanje hitrejše; 
+    # funkcija findall je sestavljena tako, da vzorec v vsakem primeru najprej compila, ampak praviloma 
+    # vseeno pri večkratnem iskanju vzorec najprej compilamo
+    return re.findall(vzorec_bloka, page_content)
 
 
 # Definirajte funkcijo, ki sprejme niz, ki predstavlja oglas, in izlušči
@@ -140,8 +155,17 @@ def main(redownload=True, reparse=True):
     3. Podatke shrani v csv datoteko
     """
     # Najprej v lokalno datoteko shranimo glavno stran
+    
+    page_str = download_url_to_string(cats_frontpage_url)
+
+    save_string_to_file(page_str, cat_directory, frontpage_filename)
 
     # Iz lokalne (html) datoteke preberemo podatke
+
+    vzorec = r"<li class=\"EntityList-item EntityList-item--(.*?)</li>"
+    data = re.findall(vzorec, page_str, re.DOTALL | re.IGNORECASE)
+
+    # več flagov kombiniramo s |
 
     # Podatke preberemo v lepšo obliko (seznam slovarjev)
 
@@ -151,8 +175,10 @@ def main(redownload=True, reparse=True):
     # celotna spletna stran ob vsakem zagon prenese (četudi že obstaja)
     # in enako za pretvorbo
 
-    raise NotImplementedError()
 
 
+# Ta if stavek definiramo, da lahko datoteko uporabimo tudi kot knjižnico drugje (v drugih datotekah)
+# Če do nje dostopamo iz datoteke main, se funkcije poženejo (downloada podatke ipd.), sicer pa se 
+# le definirajo in do njih lahko dostopamo iz druge datoteke
 if __name__ == '__main__':
     main()
