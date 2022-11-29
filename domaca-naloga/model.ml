@@ -56,7 +56,7 @@ let get_box (grid : 'a grid) (box_ind : int) =
   let row_lsts = chunkify 3 (rows grid) in
   let rows = List.nth row_lsts (box_ind / 3) in
   let f i = Array.sub (List.nth rows i) (3 * (box_ind mod 3)) 3 in
-  Array.fold_left Array.append [||] (Array.init 3 f)
+  Array.concat (List.init 3 f)
 
 let boxes grid = List.init 9 (get_box grid)
 
@@ -122,4 +122,16 @@ type solution = int grid
 
 let print_solution solution = print_grid string_of_int solution
 
-let is_valid_solution problem solution = failwith "TODO"
+let is_valid solution = 
+  let check = rows solution @ columns solution @ boxes solution in
+  let f i = List.fold_left ( && ) true (List.map (Array.exists ((=)(i + 1))) check) in
+  List.fold_left ( && ) true (List.init 9 f)
+
+let is_of_problem problem solution = 
+  let compare_element row_ind col_ind cell_element acc = match cell_element with
+    | None -> acc
+    | Some n -> (solution.(row_ind).(col_ind) = n) && acc 
+  in 
+  foldi_grid compare_element problem.initial_grid true
+
+let is_valid_solution problem solution = (is_valid solution) && (is_of_problem problem solution)
